@@ -1,6 +1,24 @@
 from bluepy import btle
 import argparse
 
+def asciiToChar(a, b):
+  def valueOfAscii(val):
+    val = int.from_bytes(val, 'little')
+
+    if val >= 48 and val <= 57:
+      return val - 48
+    elif val >=65 and val <= 70:
+      return val - 55
+    else:
+      return 0
+
+  return (valueOfAscii(a) << 4) + valueOfAscii(b)
+    
+
+if __name__ == "__main__":
+  print(asciiToChar(b'\x46', b'\x30'))
+  exit
+
 # Some handle id constants
 notifyHandle=b'\x00\x18'
 writeHandle=b'\x00\x19'
