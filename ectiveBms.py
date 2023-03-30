@@ -22,6 +22,7 @@ class DefaultDelegation(btle.DefaultDelegate):
     btle.DefaultDelegate.__init__(self)
             
   def handleNotification(self, cHandle, data):
+    if args.v: print(f"handler: {cHandle} data: {data.hex()}")
     if not cHandle == int.from_bytes(notifyHandle, 'big'):
       return
 
@@ -82,7 +83,7 @@ class DefaultDelegation(btle.DefaultDelegate):
         self.Buf[self.Index] = data[i]
         self.Index += 1
 
-    if dataString:
+    if dataString and args.v:
       print(dataString)
 
 
@@ -97,24 +98,25 @@ def asciiToChar(a, b):
 
   return (valueOfAscii(a) << 4) + valueOfAscii(b)
     
-# if __name__ == "__main__":
-#   d = DefaultDelegation()
-#   d.handleNotification(24, bytes.fromhex('30303035353500000000000000005e3545'))
-#   d.handleNotification(24, bytes.fromhex('33383030303044433041303030303430'))
-#   d.handleNotification(24, bytes.fromhex('304430333030303830303634'));
-#   d.handleNotification(24, bytes.fromhex('30303331304230303838303744303038'));
-#   d.handleNotification(24, bytes.fromhex('30453232304535463045443530443030'));
-#   d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-#   d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-#   d.handleNotification(24, bytes.fromhex('303030303030303030303030'));
-#   d.handleNotification(24, bytes.fromhex('30303035363800000000000000005e3545'));
-#   exit
 
 # Command line parameters
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--device", dest = "device", help="Specify remote Bluetooth address", metavar="MAC", required=True)
 parser.add_argument("-v", "--verbose", dest = "v", help="Verbosity", action='count', default=0)
 args = parser.parse_args()
+
+
+# test data
+# d = DefaultDelegation()
+# d.handleNotification(24, bytes.fromhex('30303035353500000000000000005e3545'))
+# d.handleNotification(24, bytes.fromhex('33383030303044433041303030303430'))
+# d.handleNotification(24, bytes.fromhex('304430333030303830303634'));
+# d.handleNotification(24, bytes.fromhex('30303331304230303838303744303038'));
+# d.handleNotification(24, bytes.fromhex('30453232304535463045443530443030'));
+# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
+# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
+# d.handleNotification(24, bytes.fromhex('303030303030303030303030'));
+# d.handleNotification(24, bytes.fromhex('30303035363800000000000000005e3545'));
 
 # connects to device
 if args.v: print(f"Trying to connect to {args.device}")
