@@ -17,6 +17,8 @@ class DefaultDelegation(btle.DefaultDelegate):
   End = 0
   ProtocolHead = 94
   ProtocolEnd = 0
+  waitingForData = True
+
 
   def __init__(self):
     btle.DefaultDelegate.__init__(self)
@@ -82,6 +84,8 @@ class DefaultDelegation(btle.DefaultDelegate):
             kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
             print(f"Temperature: {(kelvin - 2731) / 10} C")
 
+            DefaultDelegation.waitingForData = False
+
           self.Index = 0
           self.End = 0
           self.DataType = self.SOI
@@ -133,7 +137,7 @@ p.setDelegate(DefaultDelegation())
 if args.v: print(f"Subscribe for notifications")
 p.writeCharacteristic(int.from_bytes(writeHandle, 'big'), b'\x01\x00', True)
 
-while True:
+while DefaultDelegation.waitingForData:
     if p.waitForNotifications(1.0):
         continue
     print("Waiting...")
