@@ -60,17 +60,25 @@ class DefaultDelegation(btle.DefaultDelegate):
             dataBuf = self.Buf[1:self.Index + 1]
             dataString = str(dataBuf, 'utf-8')
 
+            if args.v > 1: print(dataString)
+
             # extract signed values
+            if args.v > 1: print(dataString[28:28+4])
             mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
             print(f"SOC {mSoc}%")
+            if args.v > 1: print(dataString[0:8])
             mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
             print(f"Voltage {mVolt / 1000}V")
+            if args.v > 1: print(dataString[8:8+8])
             mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
             print(f"current {mCurrent / 1000}A")
+            if args.v > 1: print(dataString[16:16+8])
             mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
             print(f"Capacity {mCapacity / 1000}Ah")
+            if args.v > 1: print(dataString[24:24+4])
             cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
             print(f"Cycles {cycle}")
+            if args.v > 1: print(dataString[32:32+4])
             kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
             print(f"Temperature: {(kelvin - 2731) / 10} C")
 
@@ -82,10 +90,6 @@ class DefaultDelegation(btle.DefaultDelegate):
         self.DataType = self.INFO
         self.Buf[self.Index] = data[i]
         self.Index += 1
-
-    if dataString and args.v:
-      print(dataString)
-
 
 def asciiToChar(a, b):
   def valueOfAscii(val):
