@@ -11,4 +11,13 @@ $ python3 ectiveBms.py -v -d EE:EE:EE:EE:EE:EE
 ```
 Receive results in stdout :tada:
 
-![image](https://user-images.githubusercontent.com/34249734/228852783-dd283fa5-75d1-4e45-8a8c-5bacee6feb60.png)
+```json
+{
+  "soc": 99,
+  "volt": 13.297,
+  "current": -0.744,
+  "cap": 200.0,
+  "cycles": 8,
+  "temp": 14.8
+}
+```
