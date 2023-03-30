@@ -55,7 +55,21 @@ class DefaultDelegation(btle.DefaultDelegate):
             check += asciiToChar(self.Buf[j], self.Buf[j+1])
 
           if check == (asciiToChar(self.Buf[self.End-5], self.Buf[self.End-4]) << 8) + asciiToChar(self.Buf[self.End-3], self.Buf[self.End-2]):
+            dataBuf = self.Buf[1:self.Index + 1]
             dataString = str(self.Buf[1:self.Index + 1], 'utf-8')
+
+            mSoc = extractPositions(dataBuf, 28, 4)
+            print(f"SOC {mSoc}%")
+            mVolt = extractPositions(dataBuf, 0, 8)
+            print(f"Voltage {mVolt / 1000}V")
+            mCurrent = extractPositions(dataBuf, 8, 8)
+            print(f"current {mCurrent / 1000}A")
+            mCapacity = extractPositions(dataBuf, 16, 8)
+            print(f"Capacity {mCapacity / 1000}Ah")
+            cycle = extractPositions(dataBuf, 24, 4)
+            print(f"Cycles {cycle}")
+            kelvin = extractPositions(dataBuf, 32, 4)
+            print(f"Temperature: {(kelvin - 2731) / 10} C")
 
           self.Index = 0
           self.End = 0
@@ -65,10 +79,18 @@ class DefaultDelegation(btle.DefaultDelegate):
         self.DataType = self.INFO
         self.Buf[self.Index] = data[i]
         self.Index += 1
-      # if data[i] == DefaultDelegation.ProtocolHead: print(data[i])
 
-    # do something with string
-    if dataString: print(dataString)
+    if dataString:
+      print(dataString)
+
+
+def extractPositions(b, start, length):
+  assert length % 2 == 0
+  data = b[start:start+length]
+  value = 0
+  for idx, i in enumerate(range(0, len(data), 2)):
+    value += asciiToChar(data[i], data[i+1]) << (idx * 8)
+  return value
 
 
 def asciiToChar(a, b):
