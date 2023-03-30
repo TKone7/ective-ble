@@ -1,6 +1,7 @@
 import struct
 from bluepy import btle
 import argparse
+import json
 
 # Some handle id constants
 notifyHandle=b'\x00\x18'
@@ -64,27 +65,28 @@ class DefaultDelegation(btle.DefaultDelegate):
 
             if args.v > 1: print(dataString)
 
-            # extract signed values
+            rawdat = {}
             if args.v > 1: print(dataString[28:28+4])
             mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
-            print(f"SOC {mSoc}%")
+            rawdat['soc'] = mSoc
             if args.v > 1: print(dataString[0:8])
             mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
-            print(f"Voltage {mVolt / 1000}V")
+            rawdat['volt'] = mVolt / 1000
             if args.v > 1: print(dataString[8:8+8])
             mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
-            print(f"current {mCurrent / 1000}A")
+            rawdat['current'] = mCurrent / 1000
             if args.v > 1: print(dataString[16:16+8])
             mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
-            print(f"Capacity {mCapacity / 1000}Ah")
+            rawdat['cap'] = mCapacity / 1000
             if args.v > 1: print(dataString[24:24+4])
             cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
-            print(f"Cycles {cycle}")
+            rawdat['cycles'] = cycle
             if args.v > 1: print(dataString[32:32+4])
             kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
-            print(f"Temperature: {(kelvin - 2731) / 10} C")
+            rawdat['temp'] = (kelvin - 2731) / 10
 
             DefaultDelegation.waitingForData = False
+            print (json.dumps(rawdat, indent=1, sort_keys=False))
 
           self.Index = 0
           self.End = 0
