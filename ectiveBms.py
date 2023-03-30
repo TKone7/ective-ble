@@ -1,3 +1,4 @@
+import struct
 from bluepy import btle
 import argparse
 
@@ -56,19 +57,20 @@ class DefaultDelegation(btle.DefaultDelegate):
 
           if check == (asciiToChar(self.Buf[self.End-5], self.Buf[self.End-4]) << 8) + asciiToChar(self.Buf[self.End-3], self.Buf[self.End-2]):
             dataBuf = self.Buf[1:self.Index + 1]
-            dataString = str(self.Buf[1:self.Index + 1], 'utf-8')
+            dataString = str(dataBuf, 'utf-8')
 
-            mSoc = extractPositions(dataBuf, 28, 4)
+            # extract signed values
+            mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
             print(f"SOC {mSoc}%")
-            mVolt = extractPositions(dataBuf, 0, 8)
+            mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
             print(f"Voltage {mVolt / 1000}V")
-            mCurrent = extractPositions(dataBuf, 8, 8)
+            mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
             print(f"current {mCurrent / 1000}A")
-            mCapacity = extractPositions(dataBuf, 16, 8)
+            mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
             print(f"Capacity {mCapacity / 1000}Ah")
-            cycle = extractPositions(dataBuf, 24, 4)
+            cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
             print(f"Cycles {cycle}")
-            kelvin = extractPositions(dataBuf, 32, 4)
+            kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
             print(f"Temperature: {(kelvin - 2731) / 10} C")
 
           self.Index = 0
@@ -82,15 +84,6 @@ class DefaultDelegation(btle.DefaultDelegate):
 
     if dataString:
       print(dataString)
-
-
-def extractPositions(b, start, length):
-  assert length % 2 == 0
-  data = b[start:start+length]
-  value = 0
-  for idx, i in enumerate(range(0, len(data), 2)):
-    value += asciiToChar(data[i], data[i+1]) << (idx * 8)
-  return value
 
 
 def asciiToChar(a, b):
