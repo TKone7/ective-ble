@@ -8,18 +8,7 @@ notifyHandle=b'\x00\x06'
 writeHandle=b'\x00\x09'
 
 class DefaultDelegation(btle.DefaultDelegate):
-  SOI = 1
-  INFO = 2
-  EOI = 3
-  DataType = SOI
-  BufSize = 122
-  Buf = bytearray(BufSize)
-  Index = 0
-  End = 0
-  ProtocolHead = 94
-  ProtocolEnd = 0
   waitingForData = True
-
 
   def __init__(self):
     btle.DefaultDelegate.__init__(self)
@@ -29,88 +18,52 @@ class DefaultDelegation(btle.DefaultDelegate):
       return
 
     if args.v: print(f"handler: {cHandle} data: {data.hex()}")
-#
-#    if data is None or len(data) <= 0:
-#      return
-#    
-    return
 
-    dataString = ""
-
-    for i in range(len(data)):
-      if self.Index > self.BufSize-1:
-        self.Index = 0
-        self.End = 0
-        self.DataType = self.SOI
-      
-      if self.DataType != self.SOI:
-        if self.DataType == self.INFO:
-
-          self.Buf[self.Index] = data[i]
-          self.Index += 1
-
-          if data[i] == self.ProtocolEnd:
-            if (self.End < 110):
-              self.End = self.Index
-            if self.Index == 121 or self.Index == 66 or self.Index == 8:
-              self.DataType = self.EOI
-        elif self.DataType == self.EOI:
-          self.End = 114
-          check = 0
-          
-          # calculate checksum
-          for j in range(1, self.End-5, 2):
-            check += asciiToChar(self.Buf[j], self.Buf[j+1])
-
-          if check == (asciiToChar(self.Buf[self.End-5], self.Buf[self.End-4]) << 8) + asciiToChar(self.Buf[self.End-3], self.Buf[self.End-2]):
-            dataBuf = self.Buf[1:self.Index + 1]
-            dataString = str(dataBuf, 'utf-8')
-
-            if args.v > 1: print(dataString)
-
-            rawdat = {}
-            if args.v > 1: print(dataString[28:28+4])
-            mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
-            rawdat['soc'] = mSoc
-            if args.v > 1: print(dataString[0:8])
-            mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
-            rawdat['volt'] = mVolt / 1000
-            if args.v > 1: print(dataString[8:8+8])
-            mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
-            rawdat['current'] = mCurrent / 1000
-            if args.v > 1: print(dataString[16:16+8])
-            mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
-            rawdat['cap'] = mCapacity / 1000
-            if args.v > 1: print(dataString[24:24+4])
-            cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
-            rawdat['cycles'] = cycle
-            if args.v > 1: print(dataString[32:32+4])
-            kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
-            rawdat['temp'] = (kelvin - 2731) / 10
-
-            DefaultDelegation.waitingForData = False
-            print (json.dumps(rawdat, indent=1, sort_keys=False))
-
-          self.Index = 0
-          self.End = 0
-          self.DataType = self.SOI
-      
-      elif data[i] == self.ProtocolHead:
-        self.DataType = self.INFO
-        self.Buf[self.Index] = data[i]
-        self.Index += 1
-
-def asciiToChar(a, b):
-  def valueOfAscii(val):
-    if val >= 48 and val <= 57:
-      return val - 48
-    elif val >=65 and val <= 70:
-      return val - 55
-    else:
-      return 0
-
-  return (valueOfAscii(a) << 4) + valueOfAscii(b)
+    if data is None or len(data) <= 0:
+      return
     
+    if not (oneByte(data, 0) == -1 and oneByte(data, 1) == -30 and len(data) == 20):
+      return
+
+    batteryCurrent = round(twoBytes(data, 2) / 10, 1)
+    print(f'battery current: {batteryCurrent}A')
+
+    batteryVoltage = round(twoBytes(data, 4) / 100, 2)
+    print(f'battery voltage: {batteryVoltage}V')
+
+    assistantBatteryCurrent = round(twoBytes(data, 6) / 10, 1)
+    print(f'assistantBatteryCurrent: {assistantBatteryCurrent}A')
+
+    assistantBatteryVoltage = round(twoBytes(data, 8) / 100, 2)
+    print(f'assistantBatteryVoltage: {assistantBatteryVoltage}V')
+
+    solarPanelPower = round(twoBytes(data, 10))
+    print(f'solar panel power {solarPanelPower}W')
+
+    solarPanelVoltage = round(twoBytes(data, 12) / 10, 1)
+    print(f'solar panel voltage {solarPanelVoltage}V')
+
+    loadCurrent = round(twoBytes(data, 14) / 10, 1)
+    print(f'load current {loadCurrent}A')
+
+    loadVoltage = round(twoBytes(data, 16) / 10, 1)
+    print(f'load voltage {loadVoltage}V')
+
+    loadPower = round(twoBytes(data, 18))
+    print(f'load power {loadPower}W')
+
+    DefaultDelegation.waitingForData = False
+
+    
+def oneByte(b, start):
+  i = b[start]
+  l = struct.unpack('b', bytes([i]))
+  return l[0]
+
+def twoBytes(b, start):
+  i = struct.unpack('>h', b[start:start+2])
+  return i[0]
+
 
 # Command line parameters
 parser = argparse.ArgumentParser()
@@ -121,15 +74,8 @@ args = parser.parse_args()
 
 # test data
 # d = DefaultDelegation()
-# d.handleNotification(24, bytes.fromhex('30303035353500000000000000005e3545'))
-# d.handleNotification(24, bytes.fromhex('33383030303044433041303030303430'))
-# d.handleNotification(24, bytes.fromhex('304430333030303830303634'));
-# d.handleNotification(24, bytes.fromhex('30303331304230303838303744303038'));
-# d.handleNotification(24, bytes.fromhex('30453232304535463045443530443030'));
-# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('30303035363800000000000000005e3545'));
+# d.handleNotification(6, bytearray.fromhex('ffe2006e053600000000009b0195000000850000'))
+# d.handleNotification(6, bytearray.fromhex('ffe2005c05300000000000a70000000000000000'))
 
 # connects to device
 if args.v: print(f"Trying to connect to {args.device}")
@@ -138,7 +84,7 @@ p = btle.Peripheral(args.device)
 # register delegate object that is called to handle notifications
 p.setDelegate(DefaultDelegation())
 
-# write 0x1000 to the handle 0x0019 to trigger the reception of notifications
+# write to the handle 0x0009 to trigger the reception of notifications
 if args.v: print(f"Subscribe for notifications")
 p.writeCharacteristic(int.from_bytes(writeHandle, 'big'), b'\xff\xe2\x02\xe4', True)
 
