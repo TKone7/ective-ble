@@ -25,34 +25,37 @@ class DefaultDelegation(btle.DefaultDelegate):
     if not (oneByte(data, 0) == -1 and oneByte(data, 1) == -30 and len(data) == 20):
       return
 
+    rawdat = {}
+
     batteryCurrent = round(twoBytes(data, 2) / 10, 1)
-    print(f'battery current: {batteryCurrent}A')
+    rawdat['batteryCurrent'] = batteryCurrent
 
     batteryVoltage = round(twoBytes(data, 4) / 100, 2)
-    print(f'battery voltage: {batteryVoltage}V')
+    rawdat['batteryVoltage'] = batteryVoltage
 
     assistantBatteryCurrent = round(twoBytes(data, 6) / 10, 1)
-    print(f'assistantBatteryCurrent: {assistantBatteryCurrent}A')
+    rawdat['assistantBatteryCurrent'] = assistantBatteryCurrent
 
     assistantBatteryVoltage = round(twoBytes(data, 8) / 100, 2)
-    print(f'assistantBatteryVoltage: {assistantBatteryVoltage}V')
+    rawdat['assistantBatteryVoltage'] = assistantBatteryVoltage
 
     solarPanelPower = round(twoBytes(data, 10))
-    print(f'solar panel power {solarPanelPower}W')
+    rawdat['solarPanelPower'] = solarPanelPower
 
     solarPanelVoltage = round(twoBytes(data, 12) / 10, 1)
-    print(f'solar panel voltage {solarPanelVoltage}V')
+    rawdat['solarPanelVoltage'] = solarPanelVoltage
 
     loadCurrent = round(twoBytes(data, 14) / 10, 1)
-    print(f'load current {loadCurrent}A')
+    rawdat['loadCurrent'] = loadCurrent
 
     loadVoltage = round(twoBytes(data, 16) / 10, 1)
-    print(f'load voltage {loadVoltage}V')
+    rawdat['loadVoltage'] = loadVoltage
 
     loadPower = round(twoBytes(data, 18))
-    print(f'load power {loadPower}W')
+    rawdat['loadPower'] = loadPower
 
     DefaultDelegation.waitingForData = False
+    print (json.dumps(rawdat, indent=1, sort_keys=False))
 
     
 def oneByte(b, start):
