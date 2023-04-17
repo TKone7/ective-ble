@@ -143,3 +143,6 @@ while DefaultDelegation.waitingForData:
     if p.waitForNotifications(1.0):
         continue
     print("Waiting...")
+
+# cleanup
+p.disconnect()
