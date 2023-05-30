@@ -70,28 +70,33 @@ class BmsDelegation(btle.DefaultDelegate):
 
             if args.v > 1: print(dataString)
 
-            rawdat = {}
-            if args.v > 1: print(dataString[28:28+4])
-            mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
-            rawdat['soc'] = mSoc
-            if args.v > 1: print(dataString[0:8])
-            mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
-            rawdat['volt'] = mVolt / 1000
-            if args.v > 1: print(dataString[8:8+8])
-            mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
-            rawdat['current'] = mCurrent / 1000
-            if args.v > 1: print(dataString[16:16+8])
-            mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
-            rawdat['cap'] = mCapacity / 1000
-            if args.v > 1: print(dataString[24:24+4])
-            cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
-            rawdat['cycles'] = cycle
-            if args.v > 1: print(dataString[32:32+4])
-            kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
-            rawdat['temp'] = (kelvin - 2731) / 10
+            # there are errors while reading bytes
+            # just continue if it happens
+            try:
+              rawdat = {}
+              if args.v > 1: print(dataString[28:28+4])
+              mSoc = struct.unpack('h', bytes.fromhex(dataString[28:28+4]))[0]
+              rawdat['soc'] = mSoc
+              if args.v > 1: print(dataString[0:8])
+              mVolt = struct.unpack('i', bytes.fromhex(dataString[0:8]))[0]
+              rawdat['volt'] = mVolt / 1000
+              if args.v > 1: print(dataString[8:8+8])
+              mCurrent = struct.unpack('i', bytes.fromhex(dataString[8:8+8]))[0]
+              rawdat['current'] = mCurrent / 1000
+              if args.v > 1: print(dataString[16:16+8])
+              mCapacity = struct.unpack('i', bytes.fromhex(dataString[16:16+8]))[0]
+              rawdat['cap'] = mCapacity / 1000
+              if args.v > 1: print(dataString[24:24+4])
+              cycle = struct.unpack('h', bytes.fromhex(dataString[24:24+4]))[0]
+              rawdat['cycles'] = cycle
+              if args.v > 1: print(dataString[32:32+4])
+              kelvin = struct.unpack('h', bytes.fromhex(dataString[32:32+4]))[0]
+              rawdat['temp'] = (kelvin - 2731) / 10
 
-            BmsDelegation.waitingForData = False
-            print (json.dumps(rawdat, indent=1, sort_keys=False))
+              BmsDelegation.waitingForData = False
+              print (json.dumps(rawdat, indent=1, sort_keys=False))
+            except:
+              if args.v: print('Error while reading bytes, continue listeing')
 
           self.Index = 0
           self.End = 0
@@ -130,9 +135,9 @@ def connectAndListen(device, delegation, handle, value):
         break
       if p.waitForNotifications(1.0):
           continue
-      print("Waiting...")
+      if args.v: print("Waiting...")
   finally:
-    print("Disconnecting...")
+    if args.v: print("Disconnecting...")
     p.disconnect()
 
 # Command line parameters
