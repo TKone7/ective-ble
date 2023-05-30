@@ -7,10 +7,60 @@ import threading
 
 # Some handle id constants
 bmsNotifyHandle=b'\x00\x18'
-bmsWriteHandle=b'\x00\x19'
+chargeNotifyHandle=b'\x00\x06'
 
 # setup some exit event
 exit_event = threading.Event()
+
+class ChargeDelegation(btle.DefaultDelegate):
+  waitingForData = True
+
+  def __init__(self):
+    btle.DefaultDelegate.__init__(self)
+            
+  def handleNotification(self, cHandle, data):
+    if not cHandle == int.from_bytes(chargeNotifyHandle, 'big'):
+      return
+
+    if args.v: print(f"handler: {cHandle} data: {data.hex()}")
+
+    if data is None or len(data) <= 0:
+      return
+    
+    if not (oneByte(data, 0) == -1 and oneByte(data, 1) == -30 and len(data) == 20):
+      return
+
+    rawdat = {}
+
+    batteryCurrent = round(twoBytes(data, 2) / 10, 1)
+    rawdat['batteryCurrent'] = batteryCurrent
+
+    batteryVoltage = round(twoBytes(data, 4) / 100, 2)
+    rawdat['batteryVoltage'] = batteryVoltage
+
+    assistantBatteryCurrent = round(twoBytes(data, 6) / 10, 1)
+    rawdat['assistantBatteryCurrent'] = assistantBatteryCurrent
+
+    assistantBatteryVoltage = round(twoBytes(data, 8) / 100, 2)
+    rawdat['assistantBatteryVoltage'] = assistantBatteryVoltage
+
+    solarPanelPower = round(twoBytes(data, 10))
+    rawdat['solarPanelPower'] = solarPanelPower
+
+    solarPanelVoltage = round(twoBytes(data, 12) / 10, 1)
+    rawdat['solarPanelVoltage'] = solarPanelVoltage
+
+    loadCurrent = round(twoBytes(data, 14) / 10, 1)
+    rawdat['loadCurrent'] = loadCurrent
+
+    loadVoltage = round(twoBytes(data, 16) / 10, 1)
+    rawdat['loadVoltage'] = loadVoltage
+
+    loadPower = round(twoBytes(data, 18))
+    rawdat['loadPower'] = loadPower
+
+    DefaultDelegation.waitingForData = False
+    print (json.dumps(rawdat, indent=1, sort_keys=False))
 
 class BmsDelegation(btle.DefaultDelegate):
   SOI = 1
@@ -118,6 +168,15 @@ def asciiToChar(a, b):
 
   return (valueOfAscii(a) << 4) + valueOfAscii(b)
     
+def oneByte(b, start):
+  i = b[start]
+  l = struct.unpack('b', bytes([i]))
+  return l[0]
+
+def twoBytes(b, start):
+  i = struct.unpack('>h', b[start:start+2])
+  return i[0]
+
 def connectAndListen(device, delegation, handle, value):
   # connects to device
   if args.v: print(f"Trying to connect to {device}")
@@ -142,7 +201,8 @@ def connectAndListen(device, delegation, handle, value):
 
 # Command line parameters
 parser = argparse.ArgumentParser()
-parser.add_argument("-bmsd", "--bms-device", dest = "bmsDevice", help="Specify remote Bluetooth address", metavar="MAC", required=False)
+parser.add_argument("-bmsd", "--bms-device", dest = "bmsDevice", help="Specify a list of BMS devices (MAC) to observe the status", nargs="*", metavar="MAC", required=False)
+parser.add_argument("-charged", "--charge-device", dest = "chargeDevice", help="Specify a list of charge devices (MAC) to observe the status", nargs="*", metavar="MAC", required=False)
 parser.add_argument("-v", "--verbose", dest = "v", help="Verbosity", action='count', default=0)
 args = parser.parse_args()
 
@@ -152,20 +212,11 @@ def signal_handler(signum, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-# start bms thread
-bmsThread = threading.Thread(target=connectAndListen, args=(args.bmsDevice,BmsDelegation(),int.from_bytes(bmsWriteHandle, 'big'),b'\x01\x00',))
-bmsThread.start()
+# start bms threads
+for bmsDevice in args.bmsDevice:
+  bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(),int.from_bytes(b'\x00\x19', 'big'),b'\x01\x00',))
+  bmsThread.start()
 
-
-# test data
-# d = DefaultDelegation()
-# d.handleNotification(24, bytes.fromhex('30303035353500000000000000005e3545'))
-# d.handleNotification(24, bytes.fromhex('33383030303044433041303030303430'))
-# d.handleNotification(24, bytes.fromhex('304430333030303830303634'));
-# d.handleNotification(24, bytes.fromhex('30303331304230303838303744303038'));
-# d.handleNotification(24, bytes.fromhex('30453232304535463045443530443030'));
-# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('30303030303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('303030303030303030303030'));
-# d.handleNotification(24, bytes.fromhex('30303035363800000000000000005e3545'));
-
+for chargeDevice in args.chargeDevice:
+  chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(),int.from_bytes(b'\x00\x09', 'big'),b'\xff\xe2\x02\xe4',))
+  chargeThread.start()
