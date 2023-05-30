@@ -59,7 +59,7 @@ class ChargeDelegation(btle.DefaultDelegate):
     loadPower = round(twoBytes(data, 18))
     rawdat['loadPower'] = loadPower
 
-    DefaultDelegation.waitingForData = False
+    ChargeDelegation.waitingForData = False
     print (json.dumps(rawdat, indent=1, sort_keys=False))
 
 class BmsDelegation(btle.DefaultDelegate):
@@ -213,10 +213,10 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # start bms threads
-for bmsDevice in args.bmsDevice:
+for bmsDevice in args.bmsDevice or []:
   bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(),int.from_bytes(b'\x00\x19', 'big'),b'\x01\x00',))
   bmsThread.start()
 
-for chargeDevice in args.chargeDevice:
+for chargeDevice in args.chargeDevice or []:
   chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(),int.from_bytes(b'\x00\x09', 'big'),b'\xff\xe2\x02\xe4',))
   chargeThread.start()
