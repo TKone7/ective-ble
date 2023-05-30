@@ -15,8 +15,9 @@ exit_event = threading.Event()
 class ChargeDelegation(btle.DefaultDelegate):
   waitingForData = True
 
-  def __init__(self):
+  def __init__(self, mac):
     btle.DefaultDelegate.__init__(self)
+    self.mac = mac
             
   def handleNotification(self, cHandle, data):
     if not cHandle == int.from_bytes(chargeNotifyHandle, 'big'):
@@ -60,7 +61,10 @@ class ChargeDelegation(btle.DefaultDelegate):
     rawdat['loadPower'] = loadPower
 
     ChargeDelegation.waitingForData = False
-    print (json.dumps(rawdat, indent=1, sort_keys=False))
+
+    returnValue = {}
+    returnValue[self.mac] = rawdat
+    print (json.dumps(returnValue, sort_keys=False))
 
 class BmsDelegation(btle.DefaultDelegate):
   SOI = 1
@@ -76,8 +80,9 @@ class BmsDelegation(btle.DefaultDelegate):
   waitingForData = True
 
 
-  def __init__(self):
+  def __init__(self, mac):
     btle.DefaultDelegate.__init__(self)
+    self.mac = mac
             
   def handleNotification(self, cHandle, data):
     if args.v: print(f"handler: {cHandle} data: {data.hex()}")
@@ -144,7 +149,10 @@ class BmsDelegation(btle.DefaultDelegate):
               rawdat['temp'] = (kelvin - 2731) / 10
 
               BmsDelegation.waitingForData = False
-              print (json.dumps(rawdat, indent=1, sort_keys=False))
+
+              returnValue = {}
+              returnValue[self.mac] = rawdat
+              print (json.dumps(returnValue, sort_keys=False))
             except:
               if args.v: print('Error while reading bytes, continue listeing')
 
@@ -214,9 +222,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 # start bms threads
 for bmsDevice in args.bmsDevice or []:
-  bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(),int.from_bytes(b'\x00\x19', 'big'),b'\x01\x00',))
+  bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(bmsDevice),int.from_bytes(b'\x00\x19', 'big'),b'\x01\x00',))
   bmsThread.start()
 
 for chargeDevice in args.chargeDevice or []:
-  chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(),int.from_bytes(b'\x00\x09', 'big'),b'\xff\xe2\x02\xe4',))
+  chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(chargeDevice),int.from_bytes(b'\x00\x09', 'big'),b'\xff\xe2\x02\xe4',))
   chargeThread.start()
