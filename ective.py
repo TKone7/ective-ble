@@ -203,6 +203,7 @@ def connectAndListen(device, delegation, handle, value):
       if p.waitForNotifications(1.0):
           continue
       if args.v: print("Waiting...")
+      p.writeCharacteristic(handle, value, True)
   finally:
     if args.v: print("Disconnecting...")
     p.disconnect()
