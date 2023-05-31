@@ -1,4 +1,5 @@
 import struct
+import sys
 from bluepy import btle
 import argparse
 import json
@@ -155,6 +156,7 @@ class BmsDelegation(btle.DefaultDelegate):
               print (json.dumps(returnValue, sort_keys=False))
             except:
               if args.v: print('Error while reading bytes, continue listeing')
+              print('Error while reading bytes, continue listeing', file=sys.stderr)
 
           self.Index = 0
           self.End = 0
@@ -204,6 +206,8 @@ def connectAndListen(device, delegation, handle, value):
           continue
       if args.v: print("Waiting...")
       p.writeCharacteristic(handle, value, True)
+  except:
+    print(f"Whew! {sys.exc_info()[0]} occurred.", file=sys.stderr)
   finally:
     if args.v: print("Disconnecting...")
     p.disconnect()
