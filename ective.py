@@ -7,7 +7,7 @@ import signal
 import threading
 
 # Some handle id constants
-bmsNotifyHandle=b'\x00\x18'
+bmsNotifyHandles=[b'\x00\x16', b'\x00\x18']
 chargeNotifyHandle=b'\x00\x06'
 
 # setup some exit event
@@ -87,7 +87,7 @@ class BmsDelegation(btle.DefaultDelegate):
             
   def handleNotification(self, cHandle, data):
     if args.v: print(f"handler: {cHandle} data: {data.hex()}")
-    if not cHandle == int.from_bytes(bmsNotifyHandle, 'big'):
+    if not cHandle in [int.from_bytes(handle, 'big') for handle in bmsNotifyHandles]:
       return
 
     if data is None or len(data) <= 0:
@@ -196,7 +196,12 @@ def connectAndListen(device, delegation, handle, value):
   p.setDelegate(delegation)
 
   if args.v: print(f"Subscribe for notifications")
-  p.writeCharacteristic(handle, value, True)
+  for h in handle:
+    try:
+      p.writeCharacteristic(h, value, True)
+    except:
+      pass
+
 
   try:
     while True:
@@ -205,7 +210,11 @@ def connectAndListen(device, delegation, handle, value):
       if p.waitForNotifications(1.0):
           continue
       if args.v: print("Waiting...")
-      p.writeCharacteristic(handle, value, True)
+      for h in handle:
+        try:
+          p.writeCharacteristic(h, value, True)
+        except:
+          pass
   except:
     print(f"Whew! {sys.exc_info()[0]} occurred.", file=sys.stderr)
   finally:
@@ -227,9 +236,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 # start bms threads
 for bmsDevice in args.bmsDevice or []:
-  bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(bmsDevice),int.from_bytes(b'\x00\x19', 'big'),b'\x01\x00',))
+  bmsThread = threading.Thread(target=connectAndListen, args=(bmsDevice,BmsDelegation(bmsDevice),[int.from_bytes(b'\x00\x19', 'big'), int.from_bytes(b'\x00\x17', 'big')],b'\x01\x00',))
   bmsThread.start()
 
 for chargeDevice in args.chargeDevice or []:
-  chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(chargeDevice),int.from_bytes(b'\x00\x09', 'big'),b'\xff\xe2\x02\xe4',))
+  chargeThread = threading.Thread(target=connectAndListen, args=(chargeDevice,ChargeDelegation(chargeDevice),[int.from_bytes(b'\x00\x09', 'big')],b'\xff\xe2\x02\xe4',))
   chargeThread.start()
