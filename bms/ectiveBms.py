@@ -206,7 +206,7 @@ client = connect_mqtt()
 
 # connects to device
 if args.v: print(f"Trying to connect to {args.device}")
-p = btle.Peripheral(args.device, iface=1)
+p = btle.Peripheral(args.device)
 
 # register delegate object that is called to handle notifications
 p.setDelegate(DefaultDelegation())
